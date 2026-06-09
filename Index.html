@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Hochrechnung">
+<title>Hochrechnung</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #F2F2F7;
+    --card: #FFFFFF;
+    --border: rgba(60,60,67,0.18);
+    --text: #1C1C1E;
+    --sub: #6C6C70;
+    --accent: #1A3A5C;
+    --input-bg: #F2F2F7;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --green: #1D9E75;
+    --orange: #E8960A;
+    --red: #E24B4A;
+  }
+  html { background: var(--bg); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', sans-serif;
+    font-size: 15px;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  /* Header */
+  .app-header {
+    position: sticky; top: 0; z-index: 50;
+    background: rgba(242,242,247,0.92);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-bottom: 0.5px solid var(--border);
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .app-header-inner {
+    max-width: 640px; margin: 0 auto;
+    padding: 14px 16px 12px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .app-header h1 { font-size: 20px; font-weight: 700; }
+
+  /* Content */
+  .app-content { max-width: 640px; margin: 0 auto; padding: 16px 16px 110px; }
+
+  /* Tab bar */
+  .tab-bar {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(255,255,255,0.95);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-top: 0.5px solid var(--border);
+    display: flex;
+    padding-bottom: env(safe-area-inset-bottom, 16px);
+    z-index: 100;
+  }
+  .tab-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    padding: 10px 0 4px; border: none; background: none; cursor: pointer;
+    color: #8E8E93; -webkit-tap-highlight-color: transparent;
+  }
+  .tab-btn.active { color: var(--accent); }
+  .tab-btn .tab-icon { font-size: 22px; line-height: 1; }
+  .tab-btn .tab-label { font-size: 10px; font-weight: 600; margin-top: 3px; letter-spacing: 0.02em; }
+  .tab-dot { width: 4px; height: 4px; border-radius: 2px; background: var(--accent); margin-top: 3px; }
+
+  /* Cards */
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    border: 0.5px solid var(--border);
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: 12px; font-weight: 600; color: var(--sub);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    margin-bottom: 14px;
+  }
+
+  /* Fields */
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; color: var(--sub); font-weight: 500; }
+  input, select {
+    width: 100%; padding: 9px 11px;
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px; background: #fff; color: var(--text);
+    -webkit-appearance: none; appearance: none;
+    font-family: inherit;
+  }
+  input[readonly] { background: var(--input-bg); color: var(--sub); }
+  input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+  /* Grids */
+  .g2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .g3 { display: grid; grid-template-columns: 1fr 1fr 0.6fr; gap: 10px; }
+  .g4 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .mb10 { margin-bottom: 10px; }
+  .mb12 { margin-bottom: 12px; }
+  .mb14 { margin-bottom: 14px; }
+
+  /* Month block */
+  .month-block {
+    background: var(--input-bg);
+    border-radius: var(--radius-sm);
+    padding: 12px; margin-bottom: 10px;
+  }
+  .month-block-title {
+    font-size: 13px; font-weight: 600; color: var(--text);
+    margin-bottom: 10px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .badge-hr {
+    font-size: 11px; background: #FFF3CD; color: #856404;
+    padding: 2px 8px; border-radius: 6px;
+  }
+
+  /* Sum bar */
+  .sum-bar {
+    background: var(--accent);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+  .sum-bar-title {
+    font-size: 11px; color: rgba(255,255,255,0.65);
+    font-weight: 600; margin-bottom: 10px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .sum-bar-grid { display: grid; gap: 10px; }
+  .sum-bar-label { font-size: 11px; color: rgba(255,255,255,0.7); margin-bottom: 4px; }
+  .sum-bar-value { font-size: 15px; font-weight: 600; color: #fff; }
+
+  /* Big metric */
+  .big-metric {
+    border-radius: var(--radius);
+    padding: 16px 14px; text-align: center;
+  }
+  .big-metric-label { font-size: 12px; color: rgba(255,255,255,0.85); font-weight: 500; margin-bottom: 6px; }
+  .big-metric-value { font-size: 30px; font-weight: 700; color: #fff; line-height: 1.1; }
+  .big-metric-sub { font-size: 11px; color: rgba(255,255,255,0.75); margin-top: 5px; }
+
+  /* Small metric */
+  .small-metric { background: var(--input-bg); border-radius: var(--radius-sm); padding: 12px; }
+  .small-metric-label { font-size: 11px; color: var(--sub); margin-bottom: 4px; }
+  .small-metric-value { font-size: 18px; font-weight: 600; color: var(--text); }
+  .small-metric-sub { font-size: 11px; color: var(--sub); margin-top: 3px; }
+  .progress-bar { height: 4px; background: #E0E0E0; border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 2px; }
+
+  /* Divider */
+  .divider { height: 0.5px; background: var(--border); margin: 12px 0; }
+
+  /* Hint */
+  .saved-hint { font-size: 11px; color: var(--green); margin-top: 6px; font-weight: 500; min-height: 16px; }
+  .info-text { font-size: 12px; color: var(--sub); margin-top: 10px; }
+
+  /* Feiertag tags */
+  .tag-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+  .tag { font-size: 11px; padding: 3px 8px; border-radius: 6px; }
+  .tag-feiertag { background: #FFF3CD; color: #856404; }
+  .tag-bruecke { background: #FCEBEB; color: #842029; }
+
+  /* Preview row */
+  .preview-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 10px; font-size: 13px; color: var(--sub); }
+  .preview-row strong { color: var(--text); }
+
+  /* Buttons */
+  .btn-primary {
+    flex: 1; padding: 9px;
+    background: var(--accent); color: #fff;
+    border: none; border-radius: var(--radius-sm);
+    font-size: 14px; font-weight: 600; cursor: pointer;
+    font-family: inherit; -webkit-tap-highlight-color: transparent;
+  }
+  .btn-secondary {
+    padding: 9px 14px;
+    background: transparent; border: 0.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-size: 14px; cursor: pointer; color: var(--text);
+    font-family: inherit; -webkit-tap-highlight-color: transparent;
+  }
+  .btn-text {
+    font-size: 12px; color: var(--accent);
+    background: none; border: none; cursor: pointer;
+    font-weight: 600; font-family: inherit;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Log table */
+  .log-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .log-table th {
+    text-align: left; font-weight: 600; color: var(--sub);
+    padding: 5px 6px; border-bottom: 0.5px solid var(--border);
+    white-space: nowrap;
+  }
+  .log-table td { padding: 5px 6px; border-bottom: 0.5px solid var(--border); color: var(--text); }
+  .log-table tr:last-child td { border-bottom: none; }
+  .log-wrap { overflow-x: auto; }
+
+  /* Tabs */
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="app-header-inner">
+    <h1 id="page-title">Monats-Hochrechnung</h1>
+  </div>
+</div>
+
+<div class="app-content">
+  <!-- Monat Tab -->
+  <div id="tab-monat" class="tab-panel active">
+
+    <!-- Einstellungen -->
+    <div class="card">
+      <p class="section-title">Monat & Planung</p>
+      <div class="g2 mb12">
+        <div class="field">
+          <label>Monat</label>
+          <select id="m-monat"></select>
+        </div>
+        <div class="field">
+          <label>Jahr</label>
+          <select id="m-jahr"></select>
+        </div>
+      </div>
+      <div class="g2">
+        <div class="field">
+          <label>Planumsatz (€)</label>
+          <input type="number" id="m-plan-u" placeholder="z.B. 150000">
+        </div>
+        <div class="field">
+          <label>Plan-Rohertrag (€)</label>
+          <input type="number" id="m-plan-r" placeholder="z.B. 27000">
+        </div>
+      </div>
+      <p class="saved-hint" id="m-saved-hint"></p>
+      <p class="info-text" id="m-arbeitstage-info"></p>
+      <div class="tag-row" id="m-feiertag-tags"></div>
+    </div>
+
+    <!-- Tageseingabe -->
+    <div class="card">
+      <p class="section-title">Tageseingabe (kumuliert seit Monatsbeginn)</p>
+      <div class="g2 mb12">
+        <div class="field">
+          <label>Datum</label>
+          <input type="date" id="m-datum">
+        </div>
+        <div class="field">
+          <label>&nbsp;</label>
+          <div style="display:flex;gap:8px;">
+            <button class="btn-primary" onclick="mAddEintrag()">Eintragen</button>
+            <button class="btn-secondary" onclick="mLetzteLoeschen()">↩</button>
+          </div>
+        </div>
+      </div>
+      <div class="g2 mb12">
+        <div class="field">
+          <label>Fakturierter Umsatz (€)</label>
+          <input type="number" id="m-ist-u-fakt" placeholder="z.B. 28000" oninput="mCalcVorschau()">
+        </div>
+        <div class="field">
+          <label>Rohertrag fakturiert (€)</label>
+          <input type="number" id="m-ist-re-fakt" placeholder="z.B. 5600" oninput="mCalcVorschau()">
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="g3">
+        <div class="field">
+          <label>Offener Umsatz (€)</label>
+          <input type="number" id="m-ist-u-offen" placeholder="z.B. 8000" oninput="mCalcVorschau()">
+        </div>
+        <div class="field">
+          <label>RE-Satz offen (%)</label>
+          <input type="number" id="m-re-satz" value="15" min="0" max="100" oninput="mCalcVorschau()">
+        </div>
+        <div class="field">
+          <label>RE offen (€)</label>
+          <input type="number" id="m-re-offen" readonly placeholder="autom.">
+        </div>
+      </div>
+      <div class="preview-row" id="m-preview-row" style="display:none;">
+        <span>Gesamt: <strong id="m-v-u">–</strong></span>
+        <span>RE: <strong id="m-v-re">–</strong></span>
+        <span>RE %: <strong id="m-v-rep">–</strong></span>
+      </div>
+    </div>
+
+    <!-- Hochrechnung Ergebnis -->
+    <div id="m-ergebnis" style="display:none;">
+      <div class="g4 mb12" id="m-ampel"></div>
+      <div class="g4" id="m-metriken"></div>
+    </div>
+
+    <!-- Log -->
+    <div class="card" id="m-log-card" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;" class="mb12">
+        <p class="section-title" style="margin-bottom:0;" id="m-log-title">Einträge</p>
+        <button class="btn-text" onclick="mToggleLog()">Anzeigen</button>
+      </div>
+      <div class="log-wrap" id="m-log-wrap" style="display:none;">
+        <table class="log-table">
+          <thead><tr>
+            <th>Datum</th><th>Fakt.</th><th>RE fakt.</th>
+            <th>Offen</th><th>RE off.</th><th>Ges. U</th><th>Ges. RE</th><th>RE %</th>
+          </tr></thead>
+          <tbody id="m-log-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quartal Tab -->
+  <div id="tab-quartal" class="tab-panel">
+
+    <!-- Quartal/Jahr -->
+    <div class="card">
+      <p class="section-title">Quartal & Jahr</p>
+      <div class="g2">
+        <div class="field">
+          <label>Quartal</label>
+          <select id="q-quartal">
+            <option value="1">Q1 – Jan / Feb / Mär</option>
+            <option value="2">Q2 – Apr / Mai / Jun</option>
+            <option value="3">Q3 – Jul / Aug / Sep</option>
+            <option value="4">Q4 – Okt / Nov / Dez</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Jahr</label>
+          <select id="q-jahr"></select>
+        </div>
+      </div>
+      <p class="saved-hint" id="q-saved-hint"></p>
+    </div>
+
+    <!-- Planung -->
+    <div class="card">
+      <p class="section-title">Planung</p>
+      <div id="q-plan-blocks"></div>
+      <div class="sum-bar" id="q-plan-sum">
+        <p class="sum-bar-title">Summe</p>
+        <div class="sum-bar-grid" style="grid-template-columns:1fr 1fr 1fr;">
+          <div><p class="sum-bar-label">Umsatz</p><p class="sum-bar-value" id="q-ps-u">–</p></div>
+          <div><p class="sum-bar-label">Rohertrag</p><p class="sum-bar-value" id="q-ps-r">–</p></div>
+          <div><p class="sum-bar-label">RE %</p><p class="sum-bar-value" id="q-ps-rep">–</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ist -->
+    <div class="card">
+      <p class="section-title">Ist-Werte</p>
+      <p class="info-text mb14" id="q-ist-hinweis"></p>
+      <div id="q-ist-blocks"></div>
+      <div class="sum-bar">
+        <p class="sum-bar-title">Summe</p>
+        <div class="sum-bar-grid" style="grid-template-columns:1fr 1fr 1fr;">
+          <div><p class="sum-bar-label">Umsatz</p><p class="sum-bar-value" id="q-is-u">–</p></div>
+          <div><p class="sum-bar-label">Rohertrag</p><p class="sum-bar-value" id="q-is-r">–</p></div>
+          <div><p class="sum-bar-label">RE %</p><p class="sum-bar-value" id="q-is-rep">–</p></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ergebnis -->
+    <div id="q-ergebnis" style="display:none;">
+      <div class="g4 mb12" id="q-ampel"></div>
+      <div class="g4" id="q-metriken"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Tab Bar -->
+<div class="tab-bar">
+  <button class="tab-btn active" id="tbtn-monat" onclick="switchTab('monat')">
+    <span class="tab-icon">📅</span>
+    <span class="tab-label">Monat</span>
+    <div class="tab-dot" id="tdot-monat"></div>
+  </button>
+  <button class="tab-btn" id="tbtn-quartal" onclick="switchTab('quartal')">
+    <span class="tab-icon">📊</span>
+    <span class="tab-label">Quartal</span>
+    <div class="tab-dot" id="tdot-quartal" style="display:none;"></div>
+  </button>
+</div>
+
+<script>
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function fmt(n) { return Math.round(n).toLocaleString('de-DE'); }
+function fmtP(n) { return n.toFixed(1) + '%'; }
+function statusColor(pct) {
+  if (pct >= 100) return '#1D9E75';
+  if (pct >= 95)  return '#E8960A';
+  return '#E24B4A';
+}
+function lsGet(key, fallback) {
+  try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : (fallback !== undefined ? fallback : null); } catch { return fallback !== undefined ? fallback : null; }
+}
+function lsSet(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+
+// ── Feiertage NRW ─────────────────────────────────────────────────────────────
+function getEaster(y) {
+  const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4;
+  const f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30;
+  const i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7;
+  const m=Math.floor((a+11*h+22*l)/451);
+  const month=Math.floor((h+l-7*m+114)/31);
+  const day=((h+l-7*m+114)%31)+1;
+  return new Date(y,month-1,day);
+}
+function getFeiertage(year) {
+  const list = [];
+  [[1,1,'Neujahr'],[5,1,'Tag der Arbeit'],[10,3,'Tag der Deutschen Einheit'],
+   [11,1,'Allerheiligen'],[12,25,'1. Weihnachtstag'],[12,26,'2. Weihnachtstag']]
+    .forEach(([m,d,name]) => list.push({date: new Date(year,m-1,d), name}));
+  const easter = getEaster(year);
+  const add = (d,n) => { const x = new Date(d); x.setDate(x.getDate()+n); return x; };
+  [[add(easter,-2),'Karfreitag'],[easter,'Ostersonntag'],[add(easter,1),'Ostermontag'],
+   [add(easter,39),'Christi Himmelfahrt'],[add(easter,49),'Pfingstsonntag'],
+   [add(easter,50),'Pfingstmontag'],[add(easter,60),'Fronleichnam']]
+    .forEach(([date,name]) => list.push({date,name}));
+  return list;
+}
+function isFeiertag(date, feiertage) { return feiertage.find(f => f.date.toDateString() === date.toDateString()); }
+function isVorFeiertag(date, feiertage) { const next = new Date(date); next.setDate(next.getDate()+1); return !!isFeiertag(next, feiertage); }
+function getGewichtung(date, feiertage) {
+  const dow = date.getDay();
+  if (dow===0||dow===6) return 0;
+  if (isFeiertag(date, feiertage)) return 0;
+  if (dow===5) return isVorFeiertag(date, feiertage) ? 0.1 : 0.6;
+  if (isVorFeiertag(date, feiertage)) return 0.7;
+  return 1.0;
+}
+function getArbeitstage(year, month, feiertage) {
+  const days = [];
+  const dim = new Date(year, month+1, 0).getDate();
+  for (let d=1; d<=dim; d++) {
+    const date = new Date(year, month, d);
+    const g = getGewichtung(date, feiertage);
+    if (g > 0) days.push({date, gewichtung: g});
+  }
+  return days;
+}
+
+const MONATE = ['Januar','Februar','März','April','Mai','Juni','Juli','August','September','Oktober','November','Dezember'];
+
+// ── Tab switching ─────────────────────────────────────────────────────────────
+function switchTab(id) {
+  ['monat','quartal'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t===id);
+    document.getElementById('tbtn-'+t).classList.toggle('active', t===id);
+    document.getElementById('tdot-'+t).style.display = t===id ? 'block' : 'none';
+  });
+  document.getElementById('page-title').textContent =
+    id === 'monat' ? 'Monats-Hochrechnung' : 'Quartals-Hochrechnung';
+}
+
+// ── MONATS-HOCHRECHNUNG ───────────────────────────────────────────────────────
+var mEintraege = [];
+var mLogVisible = false;
+
+function mShowHint(msg) {
+  const el = document.getElementById('m-saved-hint');
+  el.textContent = msg;
+  setTimeout(() => el.textContent = '', 2500);
+}
+
+function mSavePlan() {
+  const key = 'plan_' + document.getElementById('m-jahr').value + '_' + document.getElementById('m-monat').value;
+  lsSet(key, {
+    planU: document.getElementById('m-plan-u').value,
+    planR: document.getElementById('m-plan-r').value
+  });
+}
+
+function mMonatChanged() {
+  const monat = parseInt(document.getElementById('m-monat').value);
+  const jahr  = parseInt(document.getElementById('m-jahr').value);
+  const key = 'plan_' + jahr + '_' + monat;
+  const saved = lsGet(key);
+  document.getElementById('m-plan-u').value = saved ? (saved.planU || '') : '';
+  document.getElementById('m-plan-r').value = saved ? (saved.planR || '') : '';
+  if (saved) mShowHint('Planzahlen geladen');
+
+  const eKey = 'eintraege_' + jahr + '_' + monat;
+  mEintraege = lsGet(eKey, []);
+
+  const feiertage = getFeiertage(jahr);
+  const arbeitstage = getArbeitstage(jahr, monat, feiertage);
+  const gesamtGewicht = arbeitstage.reduce((s,d) => s+d.gewichtung, 0);
+  document.getElementById('m-arbeitstage-info').textContent =
+    arbeitstage.length + ' Arbeitstage · gewichtet ' + gesamtGewicht.toFixed(1) + ' Tage';
+
+  const dim = new Date(jahr, monat+1, 0).getDate();
+  const tagsHTML = [];
+  for (let d=1; d<=dim; d++) {
+    const date = new Date(jahr, monat, d);
+    const fei = isFeiertag(date, feiertage);
+    if (fei) tagsHTML.push('<span class="tag tag-feiertag">'+fei.name+'</span>');
+    else if (date.getDay()===5 && isVorFeiertag(date, feiertage))
+      tagsHTML.push('<span class="tag tag-bruecke">Fr '+d+'. (vor Feiertag)</span>');
+  }
+  document.getElementById('m-feiertag-tags').innerHTML = tagsHTML.join('');
+  mRenderLog();
+  mBerechne();
+}
+
+function mCalcVorschau() {
+  const uFakt = parseFloat(document.getElementById('m-ist-u-fakt').value) || 0;
+  const reFakt = parseFloat(document.getElementById('m-ist-re-fakt').value) || 0;
+  const uOffen = parseFloat(document.getElementById('m-ist-u-offen').value) || 0;
+  const reSatz = parseFloat(document.getElementById('m-re-satz').value) || 0;
+  const reOffen = uOffen * (reSatz/100);
+  document.getElementById('m-re-offen').value = reOffen > 0 ? Math.round(reOffen) : '';
+  const gesamtU = uFakt + uOffen;
+  const gesamtRE = reFakt + reOffen;
+  const row = document.getElementById('m-preview-row');
+  if (gesamtU > 0 || reFakt > 0) {
+    row.style.display = 'flex';
+    document.getElementById('m-v-u').textContent = '€ ' + fmt(gesamtU);
+    document.getElementById('m-v-re').textContent = '€ ' + fmt(gesamtRE);
+    document.getElementById('m-v-rep').textContent = gesamtU > 0 ? fmtP(gesamtRE/gesamtU*100) : '–';
+  } else {
+    row.style.display = 'none';
+  }
+}
+
+function mAddEintrag() {
+  const datum = document.getElementById('m-datum').value;
+  const uFakt = parseFloat(document.getElementById('m-ist-u-fakt').value) || 0;
+  const reFakt = parseFloat(document.getElementById('m-ist-re-fakt').value) || 0;
+  const uOffen = parseFloat(document.getElementById('m-ist-u-offen').value) || 0;
+  const reSatz = parseFloat(document.getElementById('m-re-satz').value) || 0;
+  if (!datum || (uFakt===0 && uOffen===0 && reFakt===0)) {
+    alert('Bitte Datum und mindestens einen Wert eingeben.'); return;
+  }
+  const monat = parseInt(document.getElementById('m-monat').value);
+  const jahr  = parseInt(document.getElementById('m-jahr').value);
+  const d = new Date(datum);
+  if (d.getMonth() !== monat || d.getFullYear() !== jahr) {
+    alert('Datum liegt nicht im gewählten Monat.'); return;
+  }
+  const reOffen = uOffen * (reSatz/100);
+  mEintraege = mEintraege.filter(e => e.datum !== datum);
+  mEintraege.push({datum, uFakt, reFakt, uOffen, reOffen, reSatz});
+  mEintraege.sort((a,b) => a.datum.localeCompare(b.datum));
+  lsSet('eintraege_' + jahr + '_' + monat, mEintraege);
+  mSavePlan();
+  mShowHint('Eintrag gespeichert ✓');
+  mRenderLog();
+  mBerechne();
+}
+
+function mLetzteLoeschen() {
+  if (mEintraege.length === 0) return;
+  mEintraege.pop();
+  const monat = parseInt(document.getElementById('m-monat').value);
+  const jahr  = parseInt(document.getElementById('m-jahr').value);
+  lsSet('eintraege_' + jahr + '_' + monat, mEintraege);
+  mRenderLog();
+  mBerechne();
+}
+
+function mToggleLog() {
+  mLogVisible = !mLogVisible;
+  document.getElementById('m-log-wrap').style.display = mLogVisible ? 'block' : 'none';
+  document.querySelector('#m-log-card .btn-text').textContent = mLogVisible ? 'Ausblenden' : 'Anzeigen';
+}
+
+function mRenderLog() {
+  const card = document.getElementById('m-log-card');
+  if (mEintraege.length === 0) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  document.getElementById('m-log-title').textContent = 'Einträge (' + mEintraege.length + ')';
+  document.getElementById('m-log-body').innerHTML = mEintraege.map(e => {
+    const gU = e.uFakt + e.uOffen;
+    const gRE = e.reFakt + e.reOffen;
+    const rep = gU > 0 ? fmtP(gRE/gU*100) : '–';
+    return '<tr>' +
+      '<td>' + new Date(e.datum).toLocaleDateString('de-DE') + '</td>' +
+      '<td>€ ' + fmt(e.uFakt) + '</td><td>€ ' + fmt(e.reFakt) + '</td>' +
+      '<td>€ ' + fmt(e.uOffen) + '</td><td>€ ' + fmt(e.reOffen) + '</td>' +
+      '<td>€ ' + fmt(gU) + '</td><td>€ ' + fmt(gRE) + '</td>' +
+      '<td>' + rep + '</td></tr>';
+  }).join('');
+}
+
+function mBerechne() {
+  const monat = parseInt(document.getElementById('m-monat').value);
+  const jahr  = parseInt(document.getElementById('m-jahr').value);
+  const planU = parseFloat(document.getElementById('m-plan-u').value) || 0;
+  const planR = parseFloat(document.getElementById('m-plan-r').value) || 0;
+  const ergebnis = document.getElementById('m-ergebnis');
+
+  if (mEintraege.length === 0 || planU === 0) { ergebnis.style.display = 'none'; return; }
+
+  const feiertage = getFeiertage(jahr);
+  const arbeitstage = getArbeitstage(jahr, monat, feiertage);
+  const gesamtGewicht = arbeitstage.reduce((s,d) => s+d.gewichtung, 0);
+  const le = mEintraege[mEintraege.length-1];
+  const bisDate = new Date(le.datum);
+  const verstrichen = arbeitstage.filter(d => d.date <= bisDate);
+  const verstrichenGewicht = verstrichen.reduce((s,d) => s+d.gewichtung, 0);
+  if (verstrichenGewicht === 0) return;
+
+  const gU = le.uFakt + le.uOffen;
+  const gRE = le.reFakt + le.reOffen;
+  const hochU = (gU / verstrichenGewicht) * gesamtGewicht;
+  const hochR = (gRE / verstrichenGewicht) * gesamtGewicht;
+  const zielerreichungU = (hochU / planU) * 100;
+  const zielerreichungR = planR > 0 ? (hochR / planR) * 100 : 0;
+  const fortschritt = (verstrichenGewicht / gesamtGewicht) * 100;
+  const istReP = gU > 0 ? (gRE/gU*100) : 0;
+
+  ergebnis.style.display = 'block';
+  document.getElementById('m-ampel').innerHTML =
+    '<div class="big-metric" style="background:'+statusColor(zielerreichungU)+'">' +
+      '<p class="big-metric-label">Planerfüllung Umsatz</p>' +
+      '<p class="big-metric-value">'+fmtP(zielerreichungU)+'</p>' +
+      '<p class="big-metric-sub">€ '+fmt(hochU)+' / Plan € '+fmt(planU)+'</p>' +
+    '</div>' +
+    (planR > 0 ?
+      '<div class="big-metric" style="background:'+statusColor(zielerreichungR)+'">' +
+        '<p class="big-metric-label">Planerfüllung Rohertrag</p>' +
+        '<p class="big-metric-value">'+fmtP(zielerreichungR)+'</p>' +
+        '<p class="big-metric-sub">€ '+fmt(hochR)+' / Plan € '+fmt(planR)+'</p>' +
+      '</div>' : '<div></div>');
+
+  const diffU = hochU - planU;
+  const diffR = hochR - planR;
+  document.getElementById('m-metriken').innerHTML =
+    '<div class="small-metric">' +
+      '<p class="small-metric-label">Hochrechnung Umsatz</p>' +
+      '<p class="small-metric-value">€ '+fmt(hochU)+'</p>' +
+      '<p class="small-metric-sub" style="color:'+(diffU>=0?'#0f6e56':'#a32d2d')+'">' +
+        (diffU>=0?'+':'')+'€ '+fmt(diffU)+'</p>' +
+      '<div class="progress-bar"><div class="progress-fill" style="width:'+Math.min(zielerreichungU,100)+'%;background:'+statusColor(zielerreichungU)+'"></div></div>' +
+    '</div>' +
+    (planR > 0 ?
+      '<div class="small-metric">' +
+        '<p class="small-metric-label">Hochrechnung Rohertrag</p>' +
+        '<p class="small-metric-value">€ '+fmt(hochR)+'</p>' +
+        '<p class="small-metric-sub" style="color:'+(diffR>=0?'#0f6e56':'#a32d2d')+'">' +
+          (diffR>=0?'+':'')+'€ '+fmt(diffR)+'</p>' +
+        '<div class="progress-bar"><div class="progress-fill" style="width:'+Math.min(zielerreichungR,100)+'%;background:'+statusColor(zielerreichungR)+'"></div></div>' +
+      '</div>' : '<div></div>') +
+    '<div class="small-metric">' +
+      '<p class="small-metric-label">Monatsfortschritt</p>' +
+      '<p class="small-metric-value">'+fmtP(fortschritt)+'</p>' +
+      '<p class="small-metric-sub">'+verstrichen.length+' von '+arbeitstage.length+' Tagen</p>' +
+      '<div class="progress-bar"><div class="progress-fill" style="width:'+fortschritt+'%;background:#378ADD"></div></div>' +
+    '</div>' +
+    '<div class="small-metric">' +
+      '<p class="small-metric-label">RE % Ist</p>' +
+      '<p class="small-metric-value">'+fmtP(istReP)+'</p>' +
+      (planR > 0 ? '<p class="small-metric-sub">Plan: '+fmtP(planR/planU*100)+'</p>' : '') +
+    '</div>';
+}
+
+// ── QUARTALS-HOCHRECHNUNG ──────────────────────────────────────────────────────
+var qData = [{planU:'',planR:'',istU:'',istR:''},{planU:'',planR:'',istU:'',istR:''},{planU:'',planU:'',planR:'',istU:'',istR:''}];
+
+function qShowHint(msg) {
+  const el = document.getElementById('q-saved-hint');
+  el.textContent = msg;
+  setTimeout(() => el.textContent = '', 2500);
+}
+
+function qQuartalChanged() {
+  const q = parseInt(document.getElementById('q-quartal').value);
+  const j = parseInt(document.getElementById('q-jahr').value);
+  const key = 'quartal_' + j + '_' + q;
+  const saved = lsGet(key);
+  if (saved) {
+    qData = saved;
+    qShowHint('Werte geladen');
+  } else {
+    qData = [
+      {planU:'',planR:'',istU:'',istR:''},
+      {planU:'',planR:'',istU:'',istR:''},
+      {planU:'',planR:'',istU:'',istR:''}
+    ];
+  }
+  qBuildBlocks();
+  qBerechne();
+}
+
+function qSave() {
+  const q = parseInt(document.getElementById('q-quartal').value);
+  const j = parseInt(document.getElementById('q-jahr').value);
+  lsSet('quartal_' + j + '_' + q, qData);
+  qShowHint('Gespeichert ✓');
+}
+
+function qGetMonatNamen() {
+  const q = parseInt(document.getElementById('q-quartal').value);
+  return [(q-1)*3, (q-1)*3+1, (q-1)*3+2].map(i => MONATE[i]);
+}
+
+function qBuildBlocks() {
+  const namen = qGetMonatNamen();
+  const q = parseInt(document.getElementById('q-quartal').value);
+  const j = parseInt(document.getElementById('q-jahr').value);
+
+  // Plan blocks
+  document.getElementById('q-plan-blocks').innerHTML = [0,1,2].map(i => {
+    const d = qData[i];
+    const rep = (parseFloat(d.planU)||0) > 0 ? fmtP((parseFloat(d.planR)||0)/(parseFloat(d.planU)||1)*100) : '';
+    return `<div class="month-block">
+      <div class="month-block-title">${namen[i]}</div>
+      <div class="g3">
+        <div class="field"><label>Planumsatz (€)</label>
+          <input type="number" id="qpu${i}" value="${d.planU}" placeholder="z.B. 100000" oninput="qUpdate(${i},'planU',this.value)"></div>
+        <div class="field"><label>Plan-Rohertrag (€)</label>
+          <input type="number" id="qpr${i}" value="${d.planR}" placeholder="z.B. 18000" oninput="qUpdate(${i},'planR',this.value)"></div>
+        <div class="field"><label>RE %</label>
+          <input type="text" id="qprep${i}" value="${rep}" readonly></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Ist blocks
+  document.getElementById('q-ist-hinweis').textContent =
+    namen[0] + ' + ' + namen[1] + ': finale Werte · ' + namen[2] + ': aus Monats-Hochrechnung';
+
+  document.getElementById('q-ist-blocks').innerHTML = [0,1,2].map(i => {
+    const d = qData[i];
+    const rep = (parseFloat(d.istU)||0) > 0 ? fmtP((parseFloat(d.istR)||0)/(parseFloat(d.istU)||1)*100) : '';
+    const badge = i===2 ? '<span class="badge-hr">Hochrechnung</span>' : '';
+    const lbl = i < 2 ? ['Ist-Umsatz (€)','Ist-Rohertrag (€)'] : ['Hochr. Umsatz (€)','Hochr. Rohertrag (€)'];
+    return `<div class="month-block">
+      <div class="month-block-title">${namen[i]}${badge}</div>
+      <div class="g3">
+        <div class="field"><label>${lbl[0]}</label>
+          <input type="number" id="qiu${i}" value="${d.istU}" placeholder="z.B. 98000" oninput="qUpdate(${i},'istU',this.value)"></div>
+        <div class="field"><label>${lbl[1]}</label>
+          <input type="number" id="qir${i}" value="${d.istR}" placeholder="z.B. 17500" oninput="qUpdate(${i},'istR',this.value)"></div>
+        <div class="field"><label>RE %</label>
+          <input type="text" id="qirep${i}" value="${rep}" readonly></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function qUpdate(idx, field, value) {
+  qData[idx][field] = value;
+  // Update RE % display
+  if (field === 'planU' || field === 'planR') {
+    const u = parseFloat(qData[idx].planU)||0;
+    const r = parseFloat(qData[idx].planR)||0;
+    const el = document.getElementById('qprep'+idx);
+    if (el) el.value = u > 0 ? fmtP(r/u*100) : '';
+  }
+  if (field === 'istU' || field === 'istR') {
+    const u = parseFloat(qData[idx].istU)||0;
+    const r = parseFloat(qData[idx].istR)||0;
+    const el = document.getElementById('qirep'+idx);
+    if (el) el.value = u > 0 ? fmtP(r/u*100) : '';
+  }
+  qSave();
+  qBerechne();
+}
+
+function qBerechne() {
+  const planU = qData.map(d => parseFloat(d.planU)||0);
+  const planR = qData.map(d => parseFloat(d.planR)||0);
+  const istU  = qData.map(d => parseFloat(d.istU)||0);
+  const istR  = qData.map(d => parseFloat(d.istR)||0);
+  const sumPU = planU.reduce((a,b)=>a+b,0);
+  const sumPR = planR.reduce((a,b)=>a+b,0);
+  const sumIU = istU.reduce((a,b)=>a+b,0);
+  const sumIR = istR.reduce((a,b)=>a+b,0);
+
+  document.getElementById('q-ps-u').textContent = sumPU > 0 ? '€ '+fmt(sumPU) : '–';
+  document.getElementById('q-ps-r').textContent = sumPR > 0 ? '€ '+fmt(sumPR) : '–';
+  document.getElementById('q-ps-rep').textContent = sumPU > 0 && sumPR > 0 ? fmtP(sumPR/sumPU*100) : '–';
+  document.getElementById('q-is-u').textContent = sumIU > 0 ? '€ '+fmt(sumIU) : '–';
+  document.getElementById('q-is-r').textContent = sumIR > 0 ? '€ '+fmt(sumIR) : '–';
+  document.getElementById('q-is-rep').textContent = sumIU > 0 && sumIR > 0 ? fmtP(sumIR/sumIU*100) : '–';
+
+  const ergebnis = document.getElementById('q-ergebnis');
+  if (sumPU === 0 || sumIU === 0) { ergebnis.style.display = 'none'; return; }
+  ergebnis.style.display = 'block';
+
+  const zU = (sumIU/sumPU)*100;
+  const zR = sumPR > 0 ? (sumIR/sumPR)*100 : 0;
+  const namen = qGetMonatNamen();
+  const q = document.getElementById('q-quartal').value;
+  const j = document.getElementById('q-jahr').value;
+  const diffU = sumIU - sumPU;
+  const diffR = sumIR - sumPR;
+
+  document.getElementById('q-ampel').innerHTML =
+    '<div class="big-metric" style="background:'+statusColor(zU)+'">' +
+      '<p class="big-metric-label">Planerfüllung Umsatz</p>' +
+      '<p class="big-metric-value">'+fmtP(zU)+'</p>' +
+      '<p class="big-metric-sub">€ '+fmt(sumIU)+' / Plan € '+fmt(sumPU)+'</p>' +
+    '</div>' +
+    (sumPR > 0 ?
+      '<div class="big-metric" style="background:'+statusColor(zR)+'">' +
+        '<p class="big-metric-label">Planerfüllung Rohertrag</p>' +
+        '<p class="big-metric-value">'+fmtP(zR)+'</p>' +
+        '<p class="big-metric-sub">€ '+fmt(sumIR)+' / Plan € '+fmt(sumPR)+'</p>' +
+      '</div>' : '<div></div>');
+
+  document.getElementById('q-metriken').innerHTML =
+    '<div class="small-metric">' +
+      '<p class="small-metric-label">Differenz Umsatz</p>' +
+      '<p class="small-metric-value" style="color:'+(diffU>=0?'#0f6e56':'#a32d2d')+'">' +
+        (diffU>=0?'+':'')+'€ '+fmt(diffU)+'</p>' +
+      '<div class="progress-bar"><div class="progress-fill" style="width:'+Math.min(zU,100)+'%;background:'+statusColor(zU)+'"></div></div>' +
+    '</div>' +
+    (sumPR > 0 ?
+      '<div class="small-metric">' +
+        '<p class="small-metric-label">Differenz Rohertrag</p>' +
+        '<p class="small-metric-value" style="color:'+(diffR>=0?'#0f6e56':'#a32d2d')+'">' +
+          (diffR>=0?'+':'')+'€ '+fmt(diffR)+'</p>' +
+        '<div class="progress-bar"><div class="progress-fill" style="width:'+Math.min(zR,100)+'%;background:'+statusColor(zR)+'"></div></div>' +
+      '</div>' : '<div></div>') +
+    '<div class="small-metric">' +
+      '<p class="small-metric-label">RE % Ist</p>' +
+      '<p class="small-metric-value">'+fmtP(sumIU > 0 ? sumIR/sumIU*100 : 0)+'</p>' +
+      (sumPR > 0 ? '<p class="small-metric-sub">Plan: '+fmtP(sumPR/sumPU*100)+'</p>' : '') +
+    '</div>' +
+    '<div class="small-metric">' +
+      '<p class="small-metric-label">Quartal</p>' +
+      '<p class="small-metric-value">Q'+q+' '+j+'</p>' +
+      '<p class="small-metric-sub">'+namen[0]+' – '+namen[2]+'</p>' +
+    '</div>';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+(function init() {
+  const today = new Date();
+  const cy = today.getFullYear();
+  const cm = today.getMonth();
+
+  // Monat selects
+  const mMonatSel = document.getElementById('m-monat');
+  MONATE.forEach((m,i) => {
+    const o = document.createElement('option');
+    o.value = i; o.textContent = m;
+    if (i === cm) o.selected = true;
+    mMonatSel.appendChild(o);
+  });
+  const mJahrSel = document.getElementById('m-jahr');
+  for (let y=cy-1; y<=cy+2; y++) {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y;
+    if (y === cy) o.selected = true;
+    mJahrSel.appendChild(o);
+  }
+  document.getElementById('m-datum').value = today.toISOString().split('T')[0];
+  mMonatSel.addEventListener('change', mMonatChanged);
+  mJahrSel.addEventListener('change', mMonatChanged);
+  document.getElementById('m-plan-u').addEventListener('change', mSavePlan);
+  document.getElementById('m-plan-r').addEventListener('change', mSavePlan);
+  document.getElementById('m-plan-u').addEventListener('input', mBerechne);
+  document.getElementById('m-plan-r').addEventListener('input', mBerechne);
+
+  // Quartal selects
+  const cq = Math.floor(cm/3) + 1;
+  document.getElementById('q-quartal').value = cq;
+  const qJahrSel = document.getElementById('q-jahr');
+  for (let y=cy-1; y<=cy+2; y++) {
+    const o = document.createElement('option');
+    o.value = y; o.textContent = y;
+    if (y === cy) o.selected = true;
+    qJahrSel.appendChild(o);
+  }
+  document.getElementById('q-quartal').addEventListener('change', qQuartalChanged);
+  qJahrSel.addEventListener('change', qQuartalChanged);
+
+  mMonatChanged();
+  qQuartalChanged();
+})();
+</script>
+</body>
+</html>
